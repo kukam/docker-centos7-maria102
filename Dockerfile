@@ -7,7 +7,8 @@ RUN echo $'[mariadb]\nname = MariaDB\nbaseurl = http://yum.mariadb.org/10.2/cent
     yum -y clean all
     
 COPY ./entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN chmod +x /entrypoint.sh && \
+    mkdir -p /dbhome
 
 ENV DATADIR /dbhome
 ENV DBPORT 7775
