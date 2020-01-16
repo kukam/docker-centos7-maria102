@@ -28,7 +28,7 @@ else
 	mysql_install_db --datadir=${DATADIR} --user=mysql > /dev/null
 
 	# Start server
-	mysqld --user=mysql --skip-networking &
+	mysqld --datadir=${DATADIR} --user=mysql --skip-networking &
 
 	# Wait at max 60 seconds for it to start up
 	i=0
