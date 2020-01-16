@@ -5,5 +5,4 @@ RUN echo $'[mariadb]\nname = MariaDB\nbaseurl = http://yum.mariadb.org/10.2/cent
     yum -y install --setopt=tsflags=nodocs epel-release && \
     yum -y update --setopt=tsflags=nodocs && \
     yum -y clean all
-
-RUN bash
+    
