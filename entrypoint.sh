@@ -55,7 +55,7 @@ else
 
 	# run sql in tempfile
 	echo "[i] run tempfile: $tfile"
-	/usr/bin/mysqld --user=mysql --datadir=${DATADIR} --bootstrap --verbose=0 < $tfile
+	/usr/sbin/mysqld --user=mysql --datadir=${DATADIR} --bootstrap --verbose=0 < $tfile
 	rm -f $tfile
 fi
 
