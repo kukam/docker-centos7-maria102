@@ -16,4 +16,4 @@ EXPOSE ${DBPORT}
 
 ENTRYPOINT ["/entrypoint.sh"]
 
-CMD ["/usr/bin/mysqld", "--user=mysql", "--datadir=/dbhome", "--port=7775", "--console"]
+CMD ["/usr/sbin/mysqld", "--user=mysql", "--datadir=/dbhome", "--port=7775", "--console"]
