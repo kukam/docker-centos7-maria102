@@ -7,13 +7,11 @@ RUN echo $'[mariadb]\nname = MariaDB\nbaseurl = http://yum.mariadb.org/10.2/cent
     yum -y clean all
     
 COPY ./entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh && \
-    mkdir -p /dbhome
+RUN chmod +x /entrypoint.sh
 
 ENV DATADIR /dbhome
-ENV DBPORT 7775
-EXPOSE ${DBPORT}
+#VOLUME ${DATADIR}
 
 ENTRYPOINT ["/entrypoint.sh"]
 
-CMD ["/usr/sbin/mysqld", "--user=mysql", "--datadir=/dbhome", "--port=7775", "--console"]
+CMD ["/usr/sbin/mysqld", "--user=mysql", "--datadir=/dbhome", "--port=3306", "--console"]

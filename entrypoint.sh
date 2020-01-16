@@ -13,31 +13,31 @@ fi
 
 # Directory already exists and has content (other thab '.' and '..')
 if [ -d "${DATADIR}/mysql" ] && [ "$( ls -A "${DATADIR}/mysql" )" ]; then
-	log "info" "Found existing data directory. MySQL already setup."
+	echo "info Found existing data directory. MySQL already setup."
 else
-	log "info" "No existing MySQL data directory found. Setting up MySQL for the first time."
+	echo "info No existing MySQL data directory found. Setting up MySQL for the first time."
 
 	# Create datadir if not exist yet
 	if [ ! -d "${DATADIR}" ]; then
-		log "info" "Creating empty data directory in: ${DATADIR}."
-		run "mkdir -p ${DATADIR}"
-		run "chown -R mysql:mysql "${DATADIR}"
+		echo "info" "Creating empty data directory in: ${DATADIR}."
+		mkdir -p ${DATADIR}
+		chown -R mysql:mysql ${DATADIR}
 	fi
 
 	# Install Database
-	run "mysql_install_db --datadir=${DATADIR} --user=mysql > /dev/null"
+	mysql_install_db --datadir=${DATADIR} --user=mysql > /dev/null
 
 	# Start server
-	run "mysqld --skip-networking &"
+	mysqld --user=mysql --skip-networking &
 
 	# Wait at max 60 seconds for it to start up
 	i=0
 	max=60
 	while [ $i -lt $max ]; do
-		if echo 'SELECT 1' |  mysql --protocol=socket -uroot  > /dev/null 2>&1; then
+		if echo 'SELECT 1' |  mysql --protocol=socket -uroot > /dev/null 2>&1; then
 			break
 		fi
-		log "info" "Initializing ..."
+		echo "info Initializing ..."
 		sleep 1s
 		i=$(( i + 1 ))
 	done
@@ -45,35 +45,43 @@ else
 	# Get current pid
 	pid="$(pgrep mysqld | head -1)"
 	if [ "${pid}" = "" ]; then
-		log "err" "Could not find running MySQL PID."
-		log "err" "MySQL init process failed."
+		echo "err Could not find running MySQL PID."
+		echo "err MySQL init process failed."
 		exit 1
 	fi
 
+	# create temp file
+	tfile=`mktemp`
+	if [ ! -f "$tfile" ]; then
+	    return 1
+	fi
+
 	# Bootstrap MySQL
-	echo "FLUSH PRIVILEGES;" | mysql --protocol=socket -uroot
-	echo "DELETE FROM mysql.user;" | mysql --protocol=socket -uroot
-	echo "GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED BY '$DB_ADMIN_PASSWORD' WITH GRANT OPTION;" | mysql --protocol=socket -uroot
-	echo "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY '$DB_ADMIN_PASSWORD' WITH GRANT OPTION;" | mysql --protocol=socket -uroot
-	echo "DROP DATABASE IF EXISTS test ;" | mysql --protocol=socket -uroot
-	
+	echo "USE mysql;" >> $tfile
+	echo "FLUSH PRIVILEGES;" >> $tfile
+	echo "DELETE FROM mysql.user;" >> $tfile
+	echo "GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED BY '$DB_ADMIN_PASSWORD' WITH GRANT OPTION;" >> $tfile
+	echo "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY '$DB_ADMIN_PASSWORD' WITH GRANT OPTION;" >> $tfile
+	echo "DROP DATABASE IF EXISTS test ;" >> $tfile
+
 	# Create new database
 	if [ "$DB_NAME" != "" ]; then
 		echo "[i] Creating database: $DB_NAME"
-		echo "CREATE DATABASE IF NOT EXISTS \`$DB_NAME\` CHARACTER SET utf8 COLLATE utf8_general_ci;" | mysql --protocol=socket -uroot
+		echo "CREATE DATABASE IF NOT EXISTS \`$DB_NAME\` CHARACTER SET utf8 COLLATE utf8_general_ci;" >> $tfile
 
 		# set new User and Password
 		if [ "$DB_USER" != "" ] && [ "$DB_USER_PASSWORD" != "" ]; then
 		echo "[i] Creating user: $DB_USER with password $DB_USER_PASSWORD"
-		echo "GRANT ALL ON \`$DB_NAME\`.* to '$DB_USER'@'%' IDENTIFIED BY '$DB_USER_PASSWORD';" | mysql --protocol=socket -uroot
+		echo "GRANT ALL ON \`$DB_NAME\`.* to '$DB_USER'@'%' IDENTIFIED BY '$DB_USER_PASSWORD';" >> $tfile
 		fi
 	fi
 
-	echo "FLUSH PRIVILEGES ;" | mysql --protocol=socket -uroot
+	echo 'FLUSH PRIVILEGES;' >> $tfile
+	cat $tfile | mysql --protocol=socket -uroot > /dev/null 2>&1
+	rm $tfile
 
 	# Shutdown MySQL
-	log "info" "Shutting down MySQL."
-	run "kill -s TERM ${pid}"
+	kill -s TERM ${pid}
 	i=0
 	max=60
 	while [ $i -lt $max ]; do
@@ -86,15 +94,16 @@ else
 
 	# Check if it is still running
 	if pgrep mysqld >/dev/null 2>&1; then
-		log "err" "Unable to shutdown MySQL server."
-		log "err" "MySQL init process failed."
+		echo "err Unable to shutdown MySQL server."
+		echo "err MySQL init process failed."
 		exit 1
 	fi
-	log "info" "MySQL successfully installed."
+	echo "info MySQL successfully installed."
+
 fi
 
 ###
 ### Start
 ###
-log "info" "Starting $(mysqld --version)"
+echo "info Starting $(mysqld --version)"
 exec "$@"
