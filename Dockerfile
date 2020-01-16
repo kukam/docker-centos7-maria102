@@ -10,7 +10,7 @@ COPY ./entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 ENV DATADIR /dbhome
-#VOLUME ${DATADIR}
+VOLUME ${DATADIR}
 
 ENTRYPOINT ["/entrypoint.sh"]
 
