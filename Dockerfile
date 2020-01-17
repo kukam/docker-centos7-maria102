@@ -18,4 +18,4 @@ VOLUME ${DATADIR}
 
 ENTRYPOINT ["/entrypoint.sh"]
 
-CMD ["/usr/sbin/mysqld", "--user=mysql", "--datadir=/dbhome", "--port=3306", "--console"]
+CMD ["/usr/sbin/mysqld", "--user=mysql", "--datadir=/dbhome", "--port=3306", "--innodb_flush_log_at_trx_commit=0", "--max-allowed-packet=33554432", "--console"]
