@@ -1,10 +1,9 @@
 #!/bin/sh
 
 # parameters
-: ${DB_NAME:-"db1"}
-: ${DB_USER:-"admin"}
-: ${DB_USER_PASSWORD:-"admin"}
-: ${DB_ADMIN_PASSWORD:-"mysql"}
+DB_NAME=${DB_NAME:-"db1"}
+DB_USER=${DB_USER:-"admin"}
+DB_USER_PASSWORD=${DB_USER_PASSWORD:-"admin"}
 
 if [ ! -d "/run/mysqld" ]; then
 	mkdir -p /run/mysqld
@@ -50,35 +49,23 @@ else
 		exit 1
 	fi
 
-	# create temp file
-	tfile=`mktemp`
-	if [ ! -f "$tfile" ]; then
-	    return 1
-	fi
-
 	# Bootstrap MySQL
-	echo "USE mysql;" >> $tfile
-	echo "FLUSH PRIVILEGES;" >> $tfile
-	echo "DELETE FROM mysql.user;" >> $tfile
-	echo "GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED BY '$DB_ADMIN_PASSWORD' WITH GRANT OPTION;" >> $tfile
-	echo "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY '$DB_ADMIN_PASSWORD' WITH GRANT OPTION;" >> $tfile
-	echo "DROP DATABASE IF EXISTS test ;" >> $tfile
+	echo "SET GLOBAL validate_password_policy=LOW;"| mysql --protocol=socket -uroot > /dev/null 2>&1
+	echo "DROP DATABASE IF EXISTS test ;"| mysql --protocol=socket -uroot > /dev/null 2>&1
 
 	# Create new database
 	if [ "$DB_NAME" != "" ]; then
 		echo "[i] Creating database: $DB_NAME"
-		echo "CREATE DATABASE IF NOT EXISTS \`$DB_NAME\` CHARACTER SET utf8 COLLATE utf8_general_ci;" >> $tfile
+		echo "CREATE DATABASE IF NOT EXISTS \`$DB_NAME\` CHARACTER SET utf8 COLLATE utf8_general_ci;"| mysql --protocol=socket -uroot > /dev/null 2>&1
 
 		# set new User and Password
 		if [ "$DB_USER" != "" ] && [ "$DB_USER_PASSWORD" != "" ]; then
 		echo "[i] Creating user: $DB_USER with password $DB_USER_PASSWORD"
-		echo "GRANT ALL ON \`$DB_NAME\`.* to '$DB_USER'@'%' IDENTIFIED BY '$DB_USER_PASSWORD';" >> $tfile
+		echo "GRANT ALL ON *.* to '$DB_USER'@'%' IDENTIFIED BY '$DB_USER_PASSWORD';"| mysql --protocol=socket -uroot > /dev/null 2>&1
+		echo 'uninstall plugin validate_password;'| mysql --protocol=socket -uroot > /dev/null 2>&1
+		echo "DELETE FROM mysql.user WHERE User NOT IN('$DB_USER');"| mysql --protocol=socket -uroot > /dev/null 2>&1
 		fi
 	fi
-
-	echo 'FLUSH PRIVILEGES;' >> $tfile
-	cat $tfile | mysql --protocol=socket -uroot > /dev/null 2>&1
-	rm $tfile
 
 	# Shutdown MySQL
 	kill -s TERM ${pid}

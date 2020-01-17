@@ -5,11 +5,15 @@ RUN echo $'[mariadb]\nname = MariaDB\nbaseurl = http://yum.mariadb.org/10.2/cent
     yum -y install --setopt=tsflags=nodocs epel-release && \
     yum -y install --setopt=tsflags=nodocs mariadb-server && \
     yum -y clean all
-    
+
 COPY ./entrypoint.sh /entrypoint.sh
+
 RUN chmod +x /entrypoint.sh
 
 ENV DATADIR /dbhome
+
+EXPOSE 3306
+
 VOLUME ${DATADIR}
 
 ENTRYPOINT ["/entrypoint.sh"]
